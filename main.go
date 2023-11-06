@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/JohnstoneDev/pokedexcli/internal/functions"
+	"github.com/JohnstoneDev/pokedexcli/internal/pokecache"
 )
 
 
@@ -14,10 +16,14 @@ func main() {
 	// All available commands
 	commands := functions.GetCommands()
 
+	// create config
 	currentConfig := functions.Config {
 		Next: "",
 		Previous : "",
 	}
+
+	// create cache
+	apiCache := *pokecache.NewCache(5 * time.Minute)
 
 	// declare a reader & wait for input
 	reader := bufio.NewReader(os.Stdin)
@@ -36,7 +42,7 @@ func main() {
 		input = strings.TrimSpace(input)
 
 		if cmd, ok := commands[input]; ok {
-			err := cmd.Callback(&currentConfig)
+			err := cmd.Callback(&currentConfig, &apiCache)
 
 			if err != nil {
 				fmt.Println(err)
