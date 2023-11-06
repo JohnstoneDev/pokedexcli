@@ -107,6 +107,9 @@ func commandMap (configPtr *config) error {
 
 	if configPtr.Next == "" {
 		response, err := pokeapi.Resource("location")
+
+		// set the previous link for the first request to the base for the API
+		configPtr.Previous = "https://pokeapi.co/api/v2/location"
 		configPtr.Next = response.Next
 
 		if err != nil {
@@ -158,6 +161,7 @@ func commandMapB (configPtr *config) error {
 		fmt.Println("Error: no previous request, please use map first")
 
 	} else {
+		// get the previous URL from the config
 		response, err := http.Get(configPtr.Previous)
 
 		if err != nil {
