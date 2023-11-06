@@ -8,21 +8,21 @@ import (
 )
 
 // a cache entry
-type cacheEntry struct {
-	createdAt time.Time
-	val []byte
+type CacheEntry struct {
+	CreatedAt time.Time
+	Val []byte
 }
 
 // cache type has a mutex to control access in goroutines
 type Cache struct {
-	data map[string]cacheEntry
+	Data map[string]CacheEntry
 	sync.Mutex
 }
 
 // function to create cache
 func NewCache(interval time.Duration) *Cache {
 	nc :=  &Cache{
-		data: make(map[string]cacheEntry),
+		Data: make(map[string]CacheEntry),
 	}
 
 	log.Println("Created cache, clearing it after", interval, "seconds")
@@ -37,12 +37,12 @@ func (c *Cache) Add(key string, val []byte) {
 	c.Lock()
 	defer c.Unlock()
 
-	entry := cacheEntry {
-		createdAt: time.Now(),
-		val: val,
+	entry := CacheEntry {
+		CreatedAt: time.Now(),
+		Val: val,
 	}
 
-	c.data[key] = entry
+	c.Data[key] = entry
 }
 
 // Get cache item
@@ -50,8 +50,8 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	c.Lock()
 	defer c.Unlock()
 
-	if entry, present := c.data[key]; present {
-		return entry.val, present
+	if entry, present := c.Data[key]; present {
+		return entry.Val, present
 	}
 
 	return nil, false
@@ -64,10 +64,10 @@ func (c *Cache) reapLoop(i time.Duration) {
 	go func(){
 		for range ticker.C {
 			c.Lock()
-			for key, item := range c.data {
-				elapsed := time.Since(item.createdAt)
+			for key, item := range c.Data {
+				elapsed := time.Since(item.CreatedAt)
 
-				if elapsed > i { delete(c.data, key) }
+				if elapsed > i { delete(c.Data, key) }
 			}
 			c.Unlock()
 		}

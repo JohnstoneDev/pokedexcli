@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	_ "time"
 	"runtime"
 
 	"github.com/mtslzr/pokeapi-go"
@@ -107,6 +108,13 @@ func commandMap (configPtr *Config) error {
 
 	if configPtr.Next == "" {
 		response, err := pokeapi.Resource("location")
+
+		// create cache entry
+		// entry := pokecache.CacheEntry {
+		// 	CreatedAt: time.Now(),
+		// }
+
+		// create cache && push the entry
 
 		// set the previous link for the first request to the base for the API
 		configPtr.Previous = "https://pokeapi.co/api/v2/location"
