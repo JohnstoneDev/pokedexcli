@@ -11,6 +11,8 @@ import (
 
 	"github.com/mtslzr/pokeapi-go"
 	"github.com/mtslzr/pokeapi-go/structs"
+
+	_ "github.com/JohnstoneDev/pokedexcli/internal/pokecache"
 )
 
 // command type with name, description & a callback
