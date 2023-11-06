@@ -1,16 +1,18 @@
 package pokecache
 
 import (
-	_"fmt"
 	"log"
 	"sync"
 	"time"
+	"fmt"
+
+	"github.com/mtslzr/pokeapi-go/structs"
 )
 
 // a cache entry
 type CacheEntry struct {
 	CreatedAt time.Time
-	Val []byte
+	Val structs.Resource
 }
 
 // cache type has a mutex to control access in goroutines
@@ -19,21 +21,22 @@ type Cache struct {
 	sync.Mutex
 }
 
-// function to create cache
+// function to create cache, accepts a interval parameter
+// that will be used to clear the cache
 func NewCache(interval time.Duration) *Cache {
-	nc :=  &Cache{
+	newCache :=  &Cache{
 		Data: make(map[string]CacheEntry),
 	}
 
-	log.Println("Created cache, clearing it after", interval, "seconds")
+	log.Println("Created cache, clearing it after", interval)
 
-	go nc.reapLoop(interval)
+	go newCache.reapLoop(interval)
 
-	return nc
+	return newCache
 }
 
 // method to add a cacheEntry to cache
-func (c *Cache) Add(key string, val []byte) {
+func (c *Cache) Add(key string, val structs.Resource) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -46,7 +49,7 @@ func (c *Cache) Add(key string, val []byte) {
 }
 
 // Get cache item
-func (c *Cache) Get(key string) ([]byte, bool) {
+func (c *Cache) Get(key string) (structs.Resource, bool) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -54,25 +57,26 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 		return entry.Val, present
 	}
 
-	return nil, false
+	return structs.Resource{}, false
 }
 
 // clears cache based on time elapsed
 func (c *Cache) reapLoop(i time.Duration) {
 	ticker := time.NewTicker(i)
 
-	go func(){
+	func(){
 		for range ticker.C {
 			c.Lock()
 			for key, item := range c.Data {
 				elapsed := time.Since(item.CreatedAt)
 
 				if elapsed > i { delete(c.Data, key) }
+
+				log.Println("cache cleared")
+
+				fmt.Print("Pokedex > ")
 			}
 			c.Unlock()
 		}
 	}()
 }
-
-
-
