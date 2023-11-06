@@ -7,20 +7,19 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	_ "time"
 	"runtime"
 
 	"github.com/mtslzr/pokeapi-go"
 	"github.com/mtslzr/pokeapi-go/structs"
 
-	_ "github.com/JohnstoneDev/pokedexcli/internal/pokecache"
+	"github.com/JohnstoneDev/pokedexcli/internal/pokecache"
 )
 
 // command type with name, description & a callback
 type cliCommand struct {
 	name        string
 	description string
-	Callback    func(configPtr *Config) error
+	Callback    func(configPtr *Config, cache *pokecache.Cache) error
 }
 
 type Config struct {
@@ -76,13 +75,13 @@ func Welcome(commands map[string]cliCommand) error {
 }
 
 // help callback : shows info on the tool
-func commandHelp (configPtr *Config) error {
+func commandHelp (configPtr *Config, cache *pokecache.Cache) error {
 	Welcome(GetCommands())
 	return nil
 }
 
 // clear command : clears the console
-func commandClear(configPtr *Config) error {
+func commandClear(configPtr *Config, cache *pokecache.Cache) error {
 	var cmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
@@ -98,23 +97,23 @@ func commandClear(configPtr *Config) error {
 }
 
 // exit callback
-func commandExit (configPtr *Config) error {
+func commandExit (configPtr *Config, cache *pokecache.Cache) error {
 	fmt.Println("Pokedex says bye bye!")
 	return errors.New("")
 }
 
+// helper function that displays the data from the API
+func displayItems(items []structs.Result) {
+	for _, item := range items {
+		fmt.Println(item.Name)
+	}
+}
+
 // API Call to PokeAPI, plays with the config struct a bit
-func commandMap (configPtr *Config) error {
+func commandMap (configPtr *Config, cache *pokecache.Cache) error {
 
 	if configPtr.Next == "" {
 		response, err := pokeapi.Resource("location")
-
-		// create cache entry
-		// entry := pokecache.CacheEntry {
-		// 	CreatedAt: time.Now(),
-		// }
-
-		// create cache && push the entry
 
 		// set the previous link for the first request to the base for the API
 		configPtr.Previous = "https://pokeapi.co/api/v2/location"
@@ -125,9 +124,13 @@ func commandMap (configPtr *Config) error {
 			return err
 		}
 
-		for _, item := range response.Results {
-			fmt.Println(item.Name)
-		}
+		// Add the response data to the cache
+		cache.Add(configPtr.Previous, response)
+
+		fmt.Println(cache, "<= cache after the first map call")
+
+		displayItems(response.Results)
+
 	} else {
 		// call the API using a get request with the next variable stored
 		// in the config
@@ -149,20 +152,22 @@ func commandMap (configPtr *Config) error {
 			return err
 		}
 
+		// Add response to cache
+		cache.Add(configPtr.Next, responseData)
+
+		fmt.Println(cache, "<= Cache on subsequent calls")
+
 		configPtr.Previous = configPtr.Next
 		configPtr.Next = responseData.Next
 
-		for _, item := range responseData.Results {
-			fmt.Println(item.Name)
-		}
-
+		displayItems(responseData.Results)
 	}
 
 	return nil
 }
 
 // Should show the previous 20 results
-func commandMapB (configPtr *Config) error {
+func commandMapB (configPtr *Config, cache *pokecache.Cache) error {
 
 	if configPtr.Previous == "" {
 
@@ -190,9 +195,7 @@ func commandMapB (configPtr *Config) error {
 
 		configPtr.Next = responseData.Next
 
-		for _, item := range responseData.Results {
-			fmt.Println(item.Name)
-		}
+		displayItems(responseData.Results)
 	}
 	return nil
 }
