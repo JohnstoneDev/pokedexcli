@@ -62,9 +62,12 @@ func (c *Cache) Get(key string) (structs.Resource, bool) {
 
 // clears cache based on time elapsed
 func (c *Cache) reapLoop(i time.Duration) {
+	// ticker to create a channel that will
+	// send the the interval to the channel after each tick
 	ticker := time.NewTicker(i)
 
-	func(){
+	// go routine that clears the cache
+	go func(){
 		for range ticker.C {
 			c.Lock()
 			for key, item := range c.Data {
