@@ -111,7 +111,6 @@ func displayItems(items []structs.Result) {
 
 // API Call to PokeAPI, plays with the config struct a bit
 func commandMap (configPtr *Config, cache *pokecache.Cache) error {
-
 	if configPtr.Next == "" {
 		response, err := pokeapi.Resource("location")
 
@@ -127,40 +126,45 @@ func commandMap (configPtr *Config, cache *pokecache.Cache) error {
 		// Add the response data to the cache
 		cache.Add(configPtr.Previous, response)
 
-		fmt.Println(cache, "<= cache after the first map call")
-
 		displayItems(response.Results)
 
 	} else {
-		// call the API using a get request with the next variable stored
-		// in the config
-		response, err := http.Get(configPtr.Next)
+		// check if there is any information in the cache
+		data, cached := cache.Get(configPtr.Next)
 
-		if err != nil {
-			return err
+		// display the cached items or call the API
+		if cached {
+			displayItems(data.Results)
+
+		} else {
+			// call the API using a get request with the next variable stored
+			// in the config
+			response, err := http.Get(configPtr.Next)
+
+			if err != nil {
+				return err
+			}
+
+			defer response.Body.Close()
+
+			// custom data type that is used as the API response
+			var responseData structs.Resource
+			decoder := json.NewDecoder(response.Body)
+
+			err = decoder.Decode(&responseData)
+
+			if err != nil {
+				return err
+			}
+
+			// Add response to cache
+			cache.Add(configPtr.Next, responseData)
+
+			configPtr.Previous = configPtr.Next
+			configPtr.Next = responseData.Next
+
+			displayItems(responseData.Results)
 		}
-
-		defer response.Body.Close()
-
-		// custom data type that is used as the API response
-		var responseData structs.Resource
-		decoder := json.NewDecoder(response.Body)
-
-		err = decoder.Decode(&responseData)
-
-		if err != nil {
-			return err
-		}
-
-		// Add response to cache
-		cache.Add(configPtr.Next, responseData)
-
-		fmt.Println(cache, "<= Cache on subsequent calls")
-
-		configPtr.Previous = configPtr.Next
-		configPtr.Next = responseData.Next
-
-		displayItems(responseData.Results)
 	}
 
 	return nil
@@ -168,34 +172,42 @@ func commandMap (configPtr *Config, cache *pokecache.Cache) error {
 
 // Should show the previous 20 results
 func commandMapB (configPtr *Config, cache *pokecache.Cache) error {
-
 	if configPtr.Previous == "" {
 
 		fmt.Println("Error: no previous request, please use map first")
 
 	} else {
-		// get the previous URL from the config
-		response, err := http.Get(configPtr.Previous)
+		// check if there are items in the cache
+		data, cached := cache.Get(configPtr.Previous)
 
-		if err != nil {
-			return err
+		// if there is none, call the api
+		if cached {
+			displayItems(data.Results)
+
+		} else {
+			// get the previous URL from the config
+			response, err := http.Get(configPtr.Previous)
+
+			if err != nil {
+				return err
+			}
+
+			defer response.Body.Close()
+
+			// custom data type that is used as the API response
+			var responseData structs.Resource
+			decoder := json.NewDecoder(response.Body)
+
+			err = decoder.Decode(&responseData)
+
+			if err != nil {
+				return err
+			}
+
+			configPtr.Next = responseData.Next
+
+			displayItems(responseData.Results)
 		}
-
-		defer response.Body.Close()
-
-		// custom data type that is used as the API response
-		var responseData structs.Resource
-		decoder := json.NewDecoder(response.Body)
-
-		err = decoder.Decode(&responseData)
-
-		if err != nil {
-			return err
-		}
-
-		configPtr.Next = responseData.Next
-
-		displayItems(responseData.Results)
 	}
 	return nil
 }
