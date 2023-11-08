@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/JohnstoneDev/pokedexcli/internal/functions"
@@ -39,10 +38,11 @@ func main() {
 			return
 		}
 
-		input = strings.TrimSpace(input)
+		// get the command Name & the argument passed
+		cmdName, arg := functions.NameAndArg(input)
 
-		if cmd, ok := commands[input]; ok {
-			err := cmd.Callback(&currentConfig, &apiCache)
+		if cmd, ok := commands[cmdName]; ok {
+			err := cmd.Callback(&currentConfig, &apiCache, arg)
 
 			if err != nil {
 				fmt.Println(err)
