@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 
 	"github.com/mtslzr/pokeapi-go"
 	"github.com/mtslzr/pokeapi-go/structs"
@@ -19,7 +20,7 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	Callback    func(configPtr *Config, cache *pokecache.Cache) error
+	Callback    func(configPtr *Config, cache *pokecache.Cache, arg string) error
 }
 
 type Config struct {
@@ -55,6 +56,11 @@ func GetCommands () map[string]cliCommand {
 			description: "(Map Back) Displays the names of the last 20 location areas in the pokemon world you viewed.",
 			Callback:		commandMapB,
 		},
+		"explore": {
+			name: 			"explore <area-name>",
+			description: "Displays additional information about a city from the pokemon world",
+			Callback:		commandExplore,
+		},
 	}
 }
 
@@ -75,13 +81,13 @@ func Welcome(commands map[string]cliCommand) error {
 }
 
 // help callback : shows info on the tool
-func commandHelp (configPtr *Config, cache *pokecache.Cache) error {
+func commandHelp (configPtr *Config, cache *pokecache.Cache, arg string) error {
 	Welcome(GetCommands())
 	return nil
 }
 
 // clear command : clears the console
-func commandClear(configPtr *Config, cache *pokecache.Cache) error {
+func commandClear(configPtr *Config, cache *pokecache.Cache, arg string) error {
 	var cmd *exec.Cmd
 
 	if runtime.GOOS == "windows" {
@@ -97,7 +103,7 @@ func commandClear(configPtr *Config, cache *pokecache.Cache) error {
 }
 
 // exit callback
-func commandExit (configPtr *Config, cache *pokecache.Cache) error {
+func commandExit (configPtr *Config, cache *pokecache.Cache, argument string) error {
 	fmt.Println("Pokedex says bye bye!")
 	return errors.New("")
 }
@@ -109,10 +115,36 @@ func displayItems(items []structs.Result) {
 	}
 }
 
+// helper function that returns a command & its argument
+// this assumes that the command only has one argument
+func NameAndArg(input string) (commandName, argument string) {
+	values := strings.Split(input, " ")
+
+	if len(values) > 2 {
+		return strings.TrimSpace(values[0]), strings.TrimSpace(values[1])
+	}
+
+	return strings.TrimSpace(values[0]), strings.TrimSpace(values[len(values) - 1])
+}
+
+func commandExplore(configPtr *Config, cache *pokecache.Cache, arg string) error {
+	// create a URL with the arg variable included
+	response, err := pokeapi.LocationArea(arg)
+
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println(response)
+
+	return nil
+}
+
 // API Call to PokeAPI, plays with the config struct a bit
-func commandMap (configPtr *Config, cache *pokecache.Cache) error {
+func commandMap (configPtr *Config, cache *pokecache.Cache, arg string) error {
 	if configPtr.Next == "" {
-		response, err := pokeapi.Resource("location")
+		response, err := pokeapi.Resource("location-area")
 
 		// set the previous link for the first request to the base for the API
 		configPtr.Previous = "https://pokeapi.co/api/v2/location"
@@ -171,7 +203,7 @@ func commandMap (configPtr *Config, cache *pokecache.Cache) error {
 }
 
 // Should show the previous 20 results
-func commandMapB (configPtr *Config, cache *pokecache.Cache) error {
+func commandMapB (configPtr *Config, cache *pokecache.Cache, arg string) error {
 	if configPtr.Previous == "" {
 
 		fmt.Println("Error: no previous request, please use map first")
