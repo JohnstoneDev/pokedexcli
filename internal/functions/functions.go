@@ -28,6 +28,15 @@ type Config struct {
 	Previous string
 }
 
+// function that checks for an error
+func CheckReturnErr (err error) error {
+	if err != nil {
+		fmt.Println(err);
+		return err;
+	}
+	return nil;
+}
+
 // store all commands here
 func GetCommands () map[string]cliCommand {
 	return  map[string]cliCommand{
@@ -131,10 +140,7 @@ func commandExplore(configPtr *Config, cache *pokecache.Cache, arg string) error
 	// create a URL with the arg variable included
 	response, err := pokeapi.LocationArea(arg)
 
-	if err != nil {
-		fmt.Println(err)
-		return err
-	}
+	CheckReturnErr(err);
 
 	fmt.Println(response)
 
@@ -150,10 +156,7 @@ func commandMap (configPtr *Config, cache *pokecache.Cache, arg string) error {
 		configPtr.Previous = "https://pokeapi.co/api/v2/location"
 		configPtr.Next = response.Next
 
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
+		CheckReturnErr(err);
 
 		// Add the response data to the cache
 		cache.Add(configPtr.Previous, response)
@@ -173,9 +176,7 @@ func commandMap (configPtr *Config, cache *pokecache.Cache, arg string) error {
 			// in the config
 			response, err := http.Get(configPtr.Next)
 
-			if err != nil {
-				return err
-			}
+			CheckReturnErr(err);
 
 			defer response.Body.Close()
 
