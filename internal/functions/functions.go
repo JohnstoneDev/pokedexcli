@@ -176,7 +176,7 @@ func commandMap (configPtr *Config, cache *pokecache.Cache, arg string) error {
 			// in the config
 			response, err := http.Get(configPtr.Next)
 
-			CheckReturnErr(err);
+			CheckReturnErr(err)
 
 			defer response.Body.Close()
 
@@ -221,9 +221,7 @@ func commandMapB (configPtr *Config, cache *pokecache.Cache, arg string) error {
 			// get the previous URL from the config
 			response, err := http.Get(configPtr.Previous)
 
-			if err != nil {
-				return err
-			}
+			CheckReturnErr(err);
 
 			defer response.Body.Close()
 
@@ -233,9 +231,7 @@ func commandMapB (configPtr *Config, cache *pokecache.Cache, arg string) error {
 
 			err = decoder.Decode(&responseData)
 
-			if err != nil {
-				return err
-			}
+			CheckReturnErr(err);
 
 			configPtr.Next = responseData.Next
 
